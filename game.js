@@ -19,6 +19,7 @@ $(document).ready(function () {
         if(typeof game_loop != "undefined") clearInterval(game_loop);
         game_loop = setInterval(drawSnake, 60);
     }
+    
     gameInit();
 
     function createSnake(){
