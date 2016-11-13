@@ -4,33 +4,22 @@ $(document).ready(function () {
     var ctx = canvas.getContext("2d");
     var canvasWidth = $("#canvas").width();
     var canvasHeight = $("#canvas").height();
-
     var snakeCellWidth = 10;
     var direction;
-    var snake;
     var score;
-
-    $("#canvas").on('click',function(){
-        drawSnake();
-    });
-
-    $(document).keydown(function(e){
-        var key = e.which;
-        if(key == "37" && direction != "right") direction = "left";
-        else if(key == "38" && direction != "down") direction = "up";
-        else if(key == "39" && direction != "left") direction = "right";
-        else if(key == "40" && direction != "up") direction = "down";
-    });
+    var snake;
 
     function gameInit(){
         direction = "right";
         createSnake();
+        createFood();
+        createRock();
         score = 0;
 
-        // if(typeof game_loop != "undefined") clearInterval(game_loop);
-        // game_loop = setInterval(drawSnake, 160);
-        drawSnake();
+        if(typeof game_loop != "undefined") clearInterval(game_loop);
+        game_loop = setInterval(drawSnake, 60);
     }
+    gameInit();
 
     function createSnake(){
         var length = 5;
@@ -39,91 +28,91 @@ $(document).ready(function () {
             snake.push({x: i, y:0});
         }
     }
-
-    // function drawSnake(){
-    //
-    //     var headX = snake[0].x;
-    //     var headY = snake[0].y;
-    //
-    //     if(direction == "right") headX++;
-    //     else if(direction == "left") headX--;
-    //     else if(direction == "up") headY--;
-    //     else if(direction == "down") headY++;
-    //
-    //     if(headX == -1 || headX == canvasWidth/snakeCellWidth || headY == -1 || headY == canvasHeight/snakeCellWidth){
-    //         gameInit();
-    //         return;
-    //     }else {
-    //         var tail = snake.pop();
-    //         tail.x = headX;
-    //         tail.y = headY;
-    //         snake.unshift(tail);
-    //     }
-    //
-    //     for(var i = 0; i < snake.length; i++) {
-    //         var newSnake = snake[i];
-    //         drawSnakeCell(newSnake.x, newSnake.y);
-    //     }
-    //
-    // }
+    function createFood(){
+        food = {
+            x: Math.round(Math.random()*(canvasWidth-snakeCellWidth)/snakeCellWidth),
+            y: Math.round(Math.random()*(canvasHeight-snakeCellWidth)/snakeCellWidth)
+        };
+    }
+    function createRock() {
+        rock = {
+            x: Math.round(Math.random()*(canvasWidth-snakeCellWidth)/snakeCellWidth),
+            y: Math.round(Math.random()*(canvasHeight-snakeCellWidth)/snakeCellWidth)
+        }
+    }
 
     function drawSnake(){
 
-        var nx = snake[0].x;
-        var ny = snake[0].y;
-        //These were the position of the head cell.
-        //We will increment it to get the new head position
-        //Lets add proper direction based movement now
-        if(direction == "right") nx++;
-        else if(direction == "left") nx--;
-        else if(direction == "up") ny--;
-        else if(direction == "down") ny++;
+        ctx.fillStyle = "#DCFEF9";
+        ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+        ctx.strokeStyle = "#141C1C";
+        ctx.strokeRect(0, 0, canvasWidth, canvasHeight);
 
-        //Lets add the game over clauses now
-        //This will restart the game if the snake hits the wall
-        //Lets add the code for body collision
-        //Now if the head of the snake bumps into its body, the game will restart
-        if(nx == -1 || nx == canvasWidth/snakeCellWidth || ny == -1 || ny == canvasHeight/snakeCellWidth )
-        {
-            //restart game
+        var headX = snake[0].x;
+        var headY = snake[0].y;
+
+        if(direction == "right") headX++;
+        else if(direction == "left") headX--;
+        else if(direction == "up") headY--;
+        else if(direction == "down") headY++;
+
+
+        if( headX == -1 || headX == canvasWidth/snakeCellWidth || headY == -1 || headY == canvasHeight/snakeCellWidth || checkExist(headX,headY,snake) || (headX==rock.x && headY==rock.y) ){
             gameInit();
-            //Lets organize the code a bit now.
             return;
         }
 
-        //Lets write the code to make the snake eat the food
-        //The logic is simple
-        //If the new head position matches with that of the food,
-        //Create a new head instead of moving the tail
+        if(headX == food.x && headY == food.y){
+            var tail = {x: headX, y: headY};
+            score++;
+            createFood();
+            createRock();
+        }else{
+            var tail = snake.pop();
+            tail.x = headX; tail.y = headY;
+        }
 
-
-        var tail = snake.pop(); //pops out the last cell
-        tail.x = nx; tail.y = ny;
-
-        //The snake can now eat the food.
-
-        snake.unshift(tail); //puts back the tail as the first cell
+        snake.unshift(tail);
 
         for(var i = 0; i < snake.length; i++)
         {
-            var c = snake[i];
-            //Lets paint 10px wide cells
-            drawSnakeCell(c.x, c.y);
+            var snakeBody = snake[i];
+            drawSnakeCell(snakeBody.x, snakeBody.y);
         }
 
-        // //Lets paint the food
-        // paint_cell(food.x, food.y);
-        // //Lets paint the score
-        // var score_text = "Score: " + score;
-        // ctx.fillText(score_text, 5, h-5);
+        drawSnakeCell(food.x, food.y);
+        drawRock(rock.x,rock.y);
+
+        var score_text = "Score: " + score;
+        ctx.fillText(score_text, 5, canvasHeight-5);
     }
 
     function drawSnakeCell(x, y){
-        ctx.fillStyle = "#21CEFF";
+        ctx.fillStyle = "#08F90E";
         ctx.fillRect(x*snakeCellWidth, y*snakeCellWidth, snakeCellWidth, snakeCellWidth);
-        ctx.strokeStyle = "#FFFB0E";
+        ctx.strokeStyle = "#ECFE1C";
         ctx.strokeRect(x*snakeCellWidth, y*snakeCellWidth, snakeCellWidth, snakeCellWidth);
     }
 
-    gameInit();
+    function drawRock(x,y) {
+        ctx.fillStyle = "#F90300";
+        ctx.fillRect(x*snakeCellWidth, y*snakeCellWidth, snakeCellWidth, snakeCellWidth);
+        ctx.strokeStyle = "#010505";
+        ctx.strokeRect(x*snakeCellWidth, y*snakeCellWidth, snakeCellWidth, snakeCellWidth);
+    }
+
+    function checkExist(x, y, array){
+        for(var i = 0; i < array.length; i++){
+            if(array[i].x == x && array[i].y == y)
+                return true;
+        }
+        return false;
+    }
+    $(document).keydown(function(e){
+        var key = e.which;
+        if(key == "37" && direction != "right") direction = "left";
+        else if(key == "38" && direction != "down") direction = "up";
+        else if(key == "39" && direction != "left") direction = "right";
+        else if(key == "40" && direction != "up") direction = "down";
+    });
 });
